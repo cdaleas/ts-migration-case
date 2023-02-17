@@ -23,6 +23,10 @@ export async function getFirstAdminStaticToken(
   return { Authorization: `Bearer ${user.token}` };
 }
 
+export function getCustomerName() {
+  return getMandatoryEnvVar('HF_CUSTOMER_NAME');
+}
+
 export function buildConnectionUrlFromEnvVariables() {
   const host = getMandatoryEnvVar('HOST');
   const port = getMandatoryEnvVar('PORT');
