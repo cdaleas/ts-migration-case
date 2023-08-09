@@ -26,6 +26,14 @@ export default defineHook(({ action }, hookExtensionContext) => {
 
   action('server.start', (): void => {
     const handler = async () => {
+      const headers = getConnectionHeaders();
+      if (!headers) {
+        logger.error(
+          `No headers generated, migrations will not be run !`
+        );
+        return;
+      }
+
       // Action hooks executes when server starts
       logger.info('Running My migrations...');
 
@@ -46,34 +54,6 @@ export default defineHook(({ action }, hookExtensionContext) => {
       let customerMigrationFiles: string[];
       let migrations: MigrationFile[];
 
-      try {
-        customerMigrationsFolderPath = path.join(
-          migrationsFolderPath,
-          getCustomerName()
-        );
-
-        customerMigrationFiles = existsSync(customerMigrationsFolderPath)
-          ? readdirSync(customerMigrationsFolderPath).filter((file) =>
-              file.endsWith('.js')
-            )
-          : [];
-
-        migrations = [
-          ...migrationFiles.map((filename) => parseFileName(filename)),
-          ...customerMigrationFiles.map((filename) =>
-            parseFileName(filename, true)
-          ),
-        ].sort((a, b) => (a.version > b.version ? 1 : -1));
-      } catch (error) {
-        logger.info(
-          `Customer name is not set. Only general migrations will run.`
-        );
-        logger.warn(error);
-        migrations = [
-          ...migrationFiles.map((filename) => parseFileName(filename)),
-        ].sort((a, b) => (a.version > b.version ? 1 : -1));
-      }
-
       function parseFileName(fileName: string, custom = false) {
         const version = fileName.split('-')[0] || '-1';
         return {
@@ -89,6 +69,40 @@ export default defineHook(({ action }, hookExtensionContext) => {
         };
       }
 
+      try {
+        customerMigrationsFolderPath = path.join(
+          migrationsFolderPath,
+          getCustomerName()
+        );
+
+        customerMigrationFiles = existsSync(customerMigrationsFolderPath)
+          ? readdirSync(customerMigrationsFolderPath).filter((file) =>
+              file.endsWith('.js')
+            )
+          : [];
+
+        // If customerMigrationFiles contains a least one string, try to run only the migrations that we looked for
+        if(customerMigrationFiles.length !== 0) {
+          migrations = [
+            ...customerMigrationFiles.map((filename) => parseFileName(filename, true)),
+          ].sort((a, b) => (a.version > b.version ? 1 : -1));
+        // Else try to run all the migration that are not completed
+        } else {
+          migrations = [
+            ...migrationFiles.map((filename) => parseFileName(filename)),
+          ].sort((a, b) => (a.version > b.version ? 1 : -1));
+        }
+      } catch (error) {
+        logger.info(
+          `Customer name is not set. Only general migrations will run.`
+        );
+        logger.warn(error);
+        migrations = [
+          ...migrationFiles.map((filename) => parseFileName(filename)),
+        ].sort((a, b) => (a.version > b.version ? 1 : -1));
+      }
+
+
       logger.info(`Found ${migrations.length} My migrations file`);
 
       const migrationKeys = new Set(migrations.map((m) => m.version));
@@ -99,13 +113,6 @@ export default defineHook(({ action }, hookExtensionContext) => {
       }
 
       if (migrations && migrations.length > 0) {
-        const headers = getConnectionHeaders();
-        if (!headers) {
-          logger.error(
-            `No headers generated, migrations will not be run !`
-          );
-          return;
-        }
         const migrationsToApply = migrations.filter((m) => !m.completed);
         logger.info(`${migrationsToApply.length} migrations left to apply`);
         for (const migration of migrationsToApply) {
