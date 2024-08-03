@@ -1,9 +1,6 @@
 #Global
 node_modules
 dist
-*.env
-!*.example.env
-scripts/user.txt
 
 #TypeScript
 tsconfig.tsbuildinfo
@@ -14,7 +11,7 @@ tsconfig.tsbuildinfo
 *.tar
 
 #Extensions
-extensions/**/*.js*
+/**/*.js*
 
 #IDE
 .vscode
@@ -27,4 +24,3 @@ extensions/**/*.js*
 #Tests
 coverage/
 junit.xml
-cypress/screenshots

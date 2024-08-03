@@ -4,6 +4,10 @@ export function getConnectionHeaders(): AuthorizationHeader | undefined {
   return { Authorization: `Bearer xxx` };
 }
 
+export function getCustomerName() {
+  return getMandatoryEnvVar('HF_CUSTOMER_NAME');
+}
+
 export function buildConnectionUrlFromEnvVariables() {
   const host = getMandatoryEnvVar('HOST');
   const port = getMandatoryEnvVar('PORT');
